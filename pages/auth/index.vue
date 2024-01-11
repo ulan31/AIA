@@ -2,7 +2,7 @@
   <div class="auth">
     <h1>Концепт.Стратегия</h1>
     <div class="auth-modal">
-      <header>
+      <p v-for="user in users" :key="user.id">ID: {{ user.id }} 👉 {{ user.name }}</p>      <header>
         <h2>Авторизация</h2>
         <span>X</span>
       </header>
@@ -13,6 +13,43 @@
     </div>
   </div>
 </template>
+
+<script>
+export default {
+  data () {
+    return {
+      users: '',
+    }
+  },
+  async mounted() {
+    this.users = await $fetch('https://jsonplaceholder.typicode.com/users')
+    this.login();
+  },
+  methods: {
+    async login() {
+      try {
+        const response = await $fetch('http://localhost/api/v1/user/login', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            username: 'test',
+            password: '123',
+          }),
+        });
+
+        // Обработка ответа, например, сохранение токена
+        console.log('Login response:', response);
+
+        // Далее вы можете перенаправить пользователя или обновить компонент
+      } catch (error) {
+        console.error('Login failed:', error);
+      }
+    }
+  }
+}
+</script>
 
 <style scoped>
 .auth {
