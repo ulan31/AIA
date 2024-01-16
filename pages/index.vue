@@ -12,7 +12,7 @@
       </figcaption>
     </figure>
 
-    <button>Оставить заявку</button>
+    <button @click="$router.push({path: '/application'})">Оставить заявку</button>
   </article>
 
 
