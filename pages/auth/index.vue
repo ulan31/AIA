@@ -10,18 +10,18 @@
       </header>
       <input type="text" v-model="login" placeholder="Логин">
       <input type="password" v-model="password" placeholder="Пароль">
-      <button @click="$router.push({path: '/step'})" class="my-btn" :class="{'my-ok': isOk}">Войти</button>
+      <button @click="login" class="my-btn" :class="{'my-ok': isOk}">Войти</button>
       <p>Забыли логин или пароль? Написать администратору</p>
     </div>
   </div>
 </template>
 
 <script>
+import axios from 'axios';
 export default {
   data () {
     return {
       users: '',
-      login: '',
       password: ''
     }
   },
@@ -34,6 +34,45 @@ export default {
       return  false;
     }
   },
+  methods: {
+    async login() {
+      console.log('login', this.$store);
+      try {
+        //   const response = await $fetch('http://localhost/api/v1/user/login', {
+        //   method: 'POST',
+        //   body: {
+        //     username: 'test',
+        //     password: '123',
+        //   },
+        //   headers: {
+        //     'accept': 'application/json',
+        //     'Content-Type': 'application/x-www-form-urlencoded'
+        //   }
+        // });
+
+        const response = await axios.post('http://localhost/api/v1/user/login', {
+          username: 'test',
+          password: '123',
+        }, {
+          headers: {
+            'accept': 'application/json',
+            'Content-Type': 'application/x-www-form-urlencoded',
+          },
+        });
+
+        console.log('response', response.data);
+        localStorage.setItem('access_token', response.data.access_token)
+
+
+      } catch (error) {
+        throw error.response;
+      }
+      // this.$store.state.auth.login({
+      //   username: 'test',
+      //   password: '123'
+      // });
+    }
+  }
 }
 </script>
 
