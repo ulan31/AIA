@@ -4,7 +4,7 @@
 
 
       <div class="chat-main-img">
-        <video ref="video" src="~/assets/images/general.mp4" autoplay></video>
+        <video ref="video" autoplay></video>
       </div>
       <div class="chat-container">
         <div v-for="(item, idx) in talk" :key="idx" class="chat-messages" id="chat-messages">
@@ -12,7 +12,7 @@
         </div>
         <div v-if="gpt">{{ gpt }}</div>
         <div class="chat-input">
-          <button @click="startRecording" :disabled="isRecording">Начать запись</button>
+          <button @click="sendMessage" :disabled="isRecording">Начать запись</button>
         </div>
       </div>
     </div>
@@ -37,7 +37,8 @@ export default {
       id: null,
       talk: [],
       firstQuestion: '',
-      gpt: null
+      gpt: null,
+        ws: null
     };
   },
   async mounted() {
@@ -88,34 +89,52 @@ export default {
     //   console.log('Disconnected from server');
     // });
 
-    let socket = new WebSocket("ws://localhost/api/v1/courses/1/steps/1/question/?user_id=78cd27d6-3f7d-415d-90a0-3aa1ae717b68");
-
-    // socket.onopen = function(e) {
-    //   console.log("[open] Соединение установлено");
-    //   console.log("Отправляем данные на сервер");
-    //   socket.send("Меня зовут Джон");
+    // let socket = new WebSocket("ws://localhost/api/v1/courses/1/steps/1/question/");
+    //
+    // // socket.onopen = function(e) {
+    // //   console.log("[open] Соединение установлено");
+    // //   console.log("Отправляем данные на сервер");
+    // //   socket.send("Меня зовут Джон");
+    // // };
+    //
+    // socket.onmessage = function(event) {
+    //   console.log(`[message] Данные получены с сервера: ${event.data}`);
     // };
+    //
+    // socket.onclose = function(event) {
+    //   if (event.wasClean) {
+    //     console.log(`[close] Соединение закрыто чисто, код=${event.code} причина=${event.reason}`);
+    //   } else {
+    //     // например, сервер убил процесс или сеть недоступна
+    //     // обычно в этом случае event.code 1006
+    //     console.log('[close] Соединение прервано');
+    //   }
+    // };
+    //
+    // socket.onerror = function(error) {
+    //   console.log(`[error]`);
+    // };
+      let ws = new WebSocket("ws://localhost/api/v1/courses/1/steps/1/question/");
 
-    socket.onmessage = function(event) {
-      console.log(`[message] Данные получены с сервера: ${event.data}`);
-    };
+      ws.onopen = function(e) {
+          console.log("[open] Соединение установлено");
+          console.log("Отправляем данные на сервер");
+          ws.send("Меня зовут Джон");
+      };
 
-    socket.onclose = function(event) {
-      if (event.wasClean) {
-        console.log(`[close] Соединение закрыто чисто, код=${event.code} причина=${event.reason}`);
-      } else {
-        // например, сервер убил процесс или сеть недоступна
-        // обычно в этом случае event.code 1006
-        console.log('[close] Соединение прервано');
-      }
-    };
-
-    socket.onerror = function(error) {
-      console.log(`[error]`);
-    };
-
+      // this.ws.onmessage = function(event) {
+      //     var messages = document.getElementById('messages')
+      //     var message = document.createElement('li')
+      //     var obj = JSON.parse(event.data)
+      //     var content = document.createTextNode(event.data)
+      //     message.appendChild(content)
+      //     messages.appendChild(message)
+      // };
   },
   methods: {
+      sendMessage(event) {
+          this.ws.send('')
+      },
     async startRecording() {
       this.transcripts.length = 0;
       this.transcription = '';

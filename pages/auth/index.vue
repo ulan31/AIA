@@ -61,7 +61,8 @@ export default {
         });
 
         console.log('response', response.data);
-        localStorage.setItem('access_token', response.data.access_token)
+        localStorage.setItem('access_token', response.data.access_token);
+        document.cookie = `access_token=Bearer ${response.data.access_token}`;
 
 
       } catch (error) {
