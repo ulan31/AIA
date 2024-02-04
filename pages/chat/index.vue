@@ -1,24 +1,16 @@
 <template>
   <article>
     <div class="chat">
-
-
       <div class="chat-main-img">
         <video ref="video" autoplay></video>
       </div>
+
       <div class="chat-container">
-        <div v-for="(item, idx) in talk" :key="idx" class="chat-messages" id="chat-messages">
-          {{ item }}
-        </div>
-        <div v-if="gpt">{{ gpt }}</div>
         <div class="chat-input">
-          <button @click="sendMessage" :disabled="isRecording">Начать запись</button>
+          <button @click="startRecording" :class="{'disabled': !isRecording}">Начать запись</button>
         </div>
       </div>
     </div>
-
-<!--    <video id="video"></video>-->
-
   </article>
 </template>
 
@@ -29,115 +21,42 @@ import axios from 'axios';
 export default {
   data() {
     return {
+      defaultLink: 'http://localhost/video/silence5sec.mp4',
       isRecording: false,
-      transcription: '',
-      transcripts: [],
       recognition: null,
       step: 1,
-      id: null,
-      talk: [],
-      firstQuestion: '',
-      gpt: null,
-        ws: null
+      ws: null,
     };
   },
   async mounted() {
-    //let accessToken = localStorage.getItem('access_token');
-    //this.firstQuestion = await axios.get('http://localhost/api/v1/courses/1/steps/', {
-      //  headers: {
-        //  'Authorization': `Bearer ${accessToken}`
-        //}
-    //});
-    //  console.log('dsadas', this.firstQuestion)
-    // this.talk.push(this.firstQuestion.question);
-    // this.id = this.firstQuestion.id;
-    //
-    // const videoTag = document.getElementById('video');
-    // const myMediaSource = new MediaSource();
-    // const url = URL.createObjectURL(myMediaSource);
-    // videoTag.src = url;
-    //
-    // console.log('videoTag', videoTag)
+    this.ws = new WebSocket("ws://localhost/api/v1/courses/1/steps/1/question/");
 
-    // Замените URL на ваш WebSocket сервер
-    // const socketUrl = 'ws://localhost/api/v1/courses/1/steps/1/question/';
+    this.ws.onopen = function(e) {
+      console.log("[open] Соединение установлено");
+    };
 
-    // Создаем экземпляр сокета
-    // this.socket = io(socketUrl, {
-    //   // withCredentials: true,
-    //   // extraHeaders: {
-    //   //   'Authorization': `Bearer ${accessToken}`,
-    //   // },
-    //   transportOptions: {
-    //     polling: {
-    //       extraHeaders: {
-    //         'Authorization': `Bearer ${accessToken}`,
-    //       },
-    //     },
-    //   }
-    // });
-    //
-    // this.socket.on('connect', () => {
-    //   console.log('Connected to server');
-    // });
-    //
-    // this.socket.on('message', (data) => {
-    //   console.log('Received message:', data);
-    // });
-    //
-    // this.socket.on('disconnect', () => {
-    //   console.log('Disconnected from server');
-    // });
+    const video = this.$refs.video;
 
-    // let socket = new WebSocket("ws://localhost/api/v1/courses/1/steps/1/question/");
-    //
-    // // socket.onopen = function(e) {
-    // //   console.log("[open] Соединение установлено");
-    // //   console.log("Отправляем данные на сервер");
-    // //   socket.send("Меня зовут Джон");
-    // // };
-    //
-    // socket.onmessage = function(event) {
-    //   console.log(`[message] Данные получены с сервера: ${event.data}`);
-    // };
-    //
-    // socket.onclose = function(event) {
-    //   if (event.wasClean) {
-    //     console.log(`[close] Соединение закрыто чисто, код=${event.code} причина=${event.reason}`);
-    //   } else {
-    //     // например, сервер убил процесс или сеть недоступна
-    //     // обычно в этом случае event.code 1006
-    //     console.log('[close] Соединение прервано');
-    //   }
-    // };
-    //
-    // socket.onerror = function(error) {
-    //   console.log(`[error]`);
-    // };
-      let ws = new WebSocket("ws://localhost/api/v1/courses/1/steps/1/question/");
+    this.ws.onmessage = function(e) {
+      const response = JSON.parse(e.data);
+      video.src = response.link;
+    }
 
-      ws.onopen = function(e) {
-          console.log("[open] Соединение установлено");
-          console.log("Отправляем данные на сервер");
-          ws.send("Меня зовут Джон");
-      };
+    video.addEventListener('waiting', () => {
+      console.log('waiting', this.defaultLink);
+      // video.src = this.defaultLink;
+    });
 
-      // this.ws.onmessage = function(event) {
-      //     var messages = document.getElementById('messages')
-      //     var message = document.createElement('li')
-      //     var obj = JSON.parse(event.data)
-      //     var content = document.createTextNode(event.data)
-      //     message.appendChild(content)
-      //     messages.appendChild(message)
-      // };
+    video.addEventListener('ended', () => {
+      console.log('ended 0', this.defaultLink);
+      this.isRecording = true;
+      video.src = this.defaultLink;
+      // video.play();
+    });
   },
   methods: {
-      sendMessage(event) {
-          this.ws.send('')
-      },
     async startRecording() {
-      this.transcripts.length = 0;
-      this.transcription = '';
+      const video = this.$refs.video;
       this.recognition = new webkitSpeechRecognition() || new SpeechRecognition();
       this.recognition.continuous = true;
       this.recognition.interimResults = true;
@@ -151,12 +70,34 @@ export default {
           }
         }
         if (transcript) {
-          this.transcripts.push(transcript);
-          this.talk.push(transcript);
-          if (transcript) {
-            this.updateTranscription(transcript);
-          }
+          console.log('transcript', transcript);
+          this.ws.send(transcript);
+          this.isRecording = false;
         }
+      };
+
+      this.ws.onmessage = (e) => {
+
+        const response = JSON.parse(e.data);
+        console.log('here', response);
+        console.log('here video', video);
+        console.log('here link', response.link);
+        video.src = response.link;
+
+        // Update event listener for the 'ended' event
+        video.addEventListener('ended', () => {
+          console.log('ended', response);
+          this.isRecording = true;
+          // Optionally, you can remove the event listener here
+          // video.removeEventListener('ended', this.playNextVideo);
+          // Call the startRecording method again or perform any other logic
+          // this.startRecording();
+        });
+
+        // Optionally, you can add an event listener for 'error' to handle video loading errors
+        video.addEventListener('error', (error) => {
+          console.error('Video loading error:', error);
+        });
       };
 
       this.recognition.onerror = (event) => {
@@ -171,52 +112,7 @@ export default {
       this.recognition.start();
       this.isRecording = true;
       console.log('Распознавание начато');
-
-      // Добавляем код для потокового видео
-      const videoElement = this.$refs.video;
-      await this.playCamera(videoElement, 640, 480);
     },
-    updateTranscription(transcript) {
-      if (this.talk.length === 2) {
-        this.talk.push('Какой продукт является результатом Вашей деятельности? Что получается на выходе?');
-      }
-
-      if (this.talk.length === 4) {
-        this.talk.push('Хорошо, и на каких территориях вы это делаете?');
-      }
-
-      if (this.talk.length === 6) {
-        this.talk.push('Получается, что Вы ...');
-        this.gpt = '"answer": "DEV_MODE: HERE WILL BE GPT ANSWER."';
-      }
-
-      this.id++;
-    },
-    playCamera(element, preferedWidth, preferedHeight) {
-      return new Promise((resolve, reject) => {
-        const devices = navigator.mediaDevices;
-        if (devices && 'getUserMedia' in devices) {
-          const constraints = {
-            video: {
-              width: preferedWidth,
-              height: preferedHeight
-            }
-          };
-          devices.getUserMedia(constraints)
-              .then((stream) => {
-                element.srcObject = stream;
-                resolve();
-              })
-              .catch((error) => {
-                console.error(error.name + ': ' + error.message);
-                reject(error);
-              });
-        } else {
-          console.error('Camera API is not supported.');
-          reject(new Error('Camera API is not supported.'));
-        }
-      });
-    }
   }
 };
 </script>
@@ -227,17 +123,24 @@ export default {
   align-items: center;
   justify-content: center;
   flex-direction: column;
+  margin-top: 50px;
 }
 
 .chat-main-img {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 286px;
-  height: 264.752px;
-  /*background: url('/assets/images/sara.png'), lightgray 50% / cover no-repeat;*/
-  border-radius: 50%;
+  width: 300px;
+  height: 300px;
   text-align: center;
+  border-radius: 50%;
+  overflow: hidden;
+}
+
+.chat-main-img video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .chat-container {
@@ -246,10 +149,15 @@ export default {
   background: #FDFDFD;
   padding: 29px 83px;
   width: 100%;
-  margin-top: 150px;
+  margin-top: 40px;
 }
 
 .chat-messages {
   margin-bottom: 20px;
+}
+
+.disabled {
+  background: #7CA5B5;
+  cursor: not-allowed;
 }
 </style>
