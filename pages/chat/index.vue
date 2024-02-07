@@ -33,7 +33,8 @@ export default {
             isSay: false,
             testValue: '',
             videoList: [],
-            i: 0
+            i: 0,
+            test: false
         };
     },
     async mounted() {
@@ -48,16 +49,31 @@ export default {
             console.log('onmessage', JSON.parse(e.data));
             const response = JSON.parse(e.data);
             this.videoList.push(response);
+            this.test = true;
         }
+
+        console.log('here', this.videoList);
 
         video.addEventListener('ended', () => {
           console.log('конец видео запускаем дефолт');
           console.log( this.i);
           console.log(this.videoList);
 
-          video.src = this.videoList[this.i].link;
-          this.i++;
-          video.play();
+          if(this.videoList[this.videoList.length - 1]?.need_answer) {
+              console.log('ehre111');
+              if(this.test) {
+                  video.src = this.videoList[this.videoList.length - 1]?.link;
+                  this.test = false;
+              } else {
+                  video.src = this.defaultLink;
+              }
+          } else {
+              console.log('111');
+              video.src = this.videoList[this.videoList.length - 1]?.link;
+
+          }
+
+            video.play();
         })
 
 
@@ -70,7 +86,6 @@ export default {
         playVideo() {
             const video = this.$refs.video;
             video.src = this.videoList[this.i].link;
-
             video.play();
         },
         async startRecording() {
