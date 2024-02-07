@@ -4,7 +4,8 @@
             <div class="chat-main-img">
                 <video x-webkit-airplay="allow" playsinline preload="yes" @click="playVideo" ref="video" autoplay></video>
             </div>
-
+            <input :value="testValue">
+            <button @click="send">Отправить</button>
             <div class="chat-container">
                 <div v-if="transcript">{{ transcript }}</div>
                 <div class="chat-input">
@@ -29,7 +30,10 @@ export default {
             ws: null,
             need_answer: true,
             transcript: '',
-            isSay: false
+            isSay: false,
+            testValue: '',
+            videoList: [],
+            i: 0
         };
     },
     async mounted() {
@@ -40,31 +44,33 @@ export default {
 
         const video = this.$refs.video;
 
-        this.ws.onmessage = function(e) {
+        this.ws.onmessage = (e) => {
+            console.log('onmessage', JSON.parse(e.data));
             const response = JSON.parse(e.data);
-            this.need_answer = response.need_answer;
-            video.src = response.link;
+            this.videoList.push(response);
         }
 
         video.addEventListener('ended', () => {
-            console.log('ended in mounted');
-            if(this.need_answer) {
-                this.isRecording = true;
-                video.src = this.defaultLink;
-            } else {
-                this.isRecording = false;
+          console.log('конец видео запускаем дефолт');
+          console.log( this.i);
+          console.log(this.videoList);
 
-                this.ws.onmessage = function(e) {
-                    const response = JSON.parse(e.data);
-                    this.need_answer = response.need_answer;
-                    video.src = response.link;
-                }
-            }
-        });
+          video.src = this.videoList[this.i].link;
+          this.i++;
+          video.play();
+        })
+
+
     },
     methods: {
+        send() {
+          this.ws.send(this.value);
+          this.value = '';
+        },
         playVideo() {
             const video = this.$refs.video;
+            video.src = this.videoList[this.i].link;
+
             video.play();
         },
         async startRecording() {
@@ -77,6 +83,7 @@ export default {
             this.recognition.lang = 'ru-RU';
 
             this.recognition.onresult = (event) => {
+              console.log('onresult');
                 let transcript = '';
                 for (let i = event.resultIndex; i < event.results.length; i++) {
                     if (event.results[i].isFinal) {
@@ -97,6 +104,7 @@ export default {
             };
 
             this.recognition.onend = () => {
+              console.log('onend');
                 this.isRecording = false;
                 this.recognition = null;
             };
