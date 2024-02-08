@@ -1,20 +1,21 @@
 <template>
     <article>
         <div class="chat">
+            <button style="margin-top: 10px" @click="start">Start</button>
             <div class="chat-main-img">
-                <video x-webkit-airplay="allow" playsinline preload="yes" @click="playVideo" ref="video"
-                       autoplay></video>
+                <video ref="video" autoplay></video>
             </div>
-            <input :value="testValue">
-            <button @click="send">Отправить</button>
-            <div class="chat-container">
-                <div v-if="transcript">{{ transcript }}</div>
-                <div class="chat-input">
-                    <button @click="startRecording" :class="{'disabled': !isRecording, 'active': isSay}">
-                        {{ isSay ? 'Говорите' : 'Начать запись' }}
-                    </button>
-                </div>
-            </div>
+            <input v-model="testValue">
+            <button style="margin-top: 10px" @click="send" :class="{'disabled': !testValue}">Отправить</button>
+
+<!--            <div class="chat-container">-->
+<!--                <div v-if="transcript">{{ transcript }}</div>-->
+<!--                <div class="chat-input">-->
+<!--                    <button @click="startRecording" :class="{'disabled': !isRecording, 'active': isSay}">-->
+<!--                        {{ isSay ? 'Говорите' : 'Начать запись' }}-->
+<!--                    </button>-->
+<!--                </div>-->
+<!--            </div>-->
         </div>
     </article>
 </template>
@@ -39,7 +40,8 @@ export default {
             i: 0,
             test: false,
             order: [],
-            orderId: 0
+            orderId: 0,
+            isSendDisabled: true
         };
     },
     async mounted() {
@@ -49,64 +51,63 @@ export default {
         };
         const video = this.$refs.video;
 
-        this.ws.onmessage = (e) => {
+        this.ws.onmessage = async (e) => {
             console.log('onmessage', JSON.parse(e.data));
             const response = JSON.parse(e.data);
             this.videoList.push(response);
+            console.log('mounted', this.videoList);
+
             this.test = true;
-
-            if(this.videoList.length > 0) {
-                this.order = this.videoList.filter((item) => item.need_answer === false);
-                console.log('order', this.order);
-
-                if (this.order && this.order.length > 0) {
-                    console.log('here');
-                    if (this.orderId === this.order.length - 1) {
-                        this.orderId = 0;
-                        this.order = [];
-                    }
-                }
-            }
         }
 
-        console.log('here', this.videoList);
+
+
+
+
 
         video.addEventListener('ended', () => {
             console.log('конец видео');
-            console.log(this.orderId);
-            console.log(this.videoList);
 
+            if(this.test) {
+                this.order = this.videoList.filter(item => item.need_answer === false);
+                console.log('order', this.order);
 
+                if(this.order && this.order.length > 0) {
+                    video.src = this.order[this.i].link;
+                    this.i = this.i + 1;
+                    console.log('i', this.i);
+                    console.log('this.order.length', this.order.length - 1);
 
-            if (this.videoList[this.videoList.length - 1]?.need_answer && this.orderId === 0) {
-                console.log('ehre111');
-                if (this.test) {
+                    if(this.i > this.order.length - 1) {
+                        console.log('finish');
+                        video.src = this.videoList[this.videoList.length - 1]?.link;
+                        this.order = [];
+                        this.i = 0;
+                    }
+                } else {
                     video.src = this.videoList[this.videoList.length - 1]?.link;
                     this.test = false;
-                } else {
-                    video.src = this.defaultLink;
                 }
             } else {
-                console.log('111');
-
-                video.src = this.order[this.orderId]?.link;
-                this.orderId = this.orderId + 1;
-
+                video.src = this.defaultLink;
             }
-            video.play();
         })
 
 
     },
     methods: {
+        start() {
+            const video = this.$refs.video;
+            video.src = this.videoList[0]?.link;
+            video.play();
+            this.test = false;
+        },
         send() {
-            this.ws.send(this.value);
-            this.value = '';
+            this.ws.send(this.testValue);
+            this.testValue = '';
         },
         playVideo() {
-            const video = this.$refs.video;
-            video.src = this.videoList[this.i].link;
-            video.play();
+
         },
         async startRecording() {
             if (!this.isRecording) return;
