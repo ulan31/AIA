@@ -1,21 +1,18 @@
 <template>
     <article>
         <div class="chat">
-            <button style="margin-top: 10px" @click="start">Start</button>
+            <button style="margin-top: 10px; margin-bottom: 10px;" @click="start">Start</button>
             <div class="chat-main-img">
                 <video ref="video" autoplay></video>
             </div>
-            <input v-model="testValue">
-            <button style="margin-top: 10px" @click="send" :class="{'disabled': !testValue}">Отправить</button>
-
-<!--            <div class="chat-container">-->
-<!--                <div v-if="transcript">{{ transcript }}</div>-->
-<!--                <div class="chat-input">-->
-<!--                    <button @click="startRecording" :class="{'disabled': !isRecording, 'active': isSay}">-->
-<!--                        {{ isSay ? 'Говорите' : 'Начать запись' }}-->
-<!--                    </button>-->
-<!--                </div>-->
-<!--            </div>-->
+            <div class="chat-container">
+                <div v-if="transcript">{{ transcript }}</div>
+                <div class="chat-input">
+                    <button @click="startRecording" :class="{'disabled': !isRecording, 'active': isSay}">
+                        {{ isSay ? 'Говорите' : 'Начать запись' }}
+                    </button>
+                </div>
+            </div>
         </div>
     </article>
 </template>
@@ -35,13 +32,7 @@ export default {
             need_answer: true,
             transcript: '',
             isSay: false,
-            testValue: '',
             videoList: [],
-            i: 0,
-            test: false,
-            order: [],
-            orderId: 0,
-            isSendDisabled: true
         };
     },
     async mounted() {
@@ -56,61 +47,23 @@ export default {
             this.videoList.push(response);
         }
 
-
-
-
-
-
         video.addEventListener('ended', () => {
             console.log('конец видео');
-            // this.videoList.unshift();
 
             if(this.videoList.length === 0) {
               video.src = this.defaultLink;
+              this.isRecording = true;
             } else {
               console.log('1', this.videoList);
               video.src = this.videoList.shift().link;
             }
-            // if(this.test) {
-            //     this.order = this.videoList.filter(item => item.need_answer === false);
-            //     console.log('order', this.order);
-            //
-            //     if(this.order && this.order.length > 0) {
-            //         video.src = this.order[this.i].link;
-            //         this.i = this.i + 1;
-            //         console.log('i', this.i);
-            //         console.log('this.order.length', this.order.length - 1);
-            //
-            //         if(this.i > this.order.length - 1) {
-            //             console.log('finish');
-            //             video.src = this.videoList[this.videoList.length - 1]?.link;
-            //             this.order = [];
-            //             this.i = 0;
-            //         }
-            //     } else {
-            //         video.src = this.videoList[this.videoList.length - 1]?.link;
-            //         this.test = false;
-            //     }
-            // } else {
-            //     video.src = this.defaultLink;
-            // }
         })
-
-
     },
     methods: {
         start() {
             const video = this.$refs.video;
-            video.src = this.videoList[0]?.link;
+            video.src = this.videoList.shift().link;
             video.play();
-            this.test = false;
-        },
-        send() {
-            this.ws.send(this.testValue);
-            this.testValue = '';
-        },
-        playVideo() {
-
         },
         async startRecording() {
             if (!this.isRecording) return;
@@ -143,9 +96,10 @@ export default {
             };
 
             this.recognition.onend = () => {
-                console.log('onend');
+                console.log('запись destroy');
                 this.isRecording = false;
                 this.recognition = null;
+                this.transcript =  '';
             };
 
             this.recognition.start();
