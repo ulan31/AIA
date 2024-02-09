@@ -52,12 +52,8 @@ export default {
         const video = this.$refs.video;
 
         this.ws.onmessage = async (e) => {
-            console.log('onmessage', JSON.parse(e.data));
             const response = JSON.parse(e.data);
             this.videoList.push(response);
-            console.log('mounted', this.videoList);
-
-            this.test = true;
         }
 
 
@@ -67,30 +63,37 @@ export default {
 
         video.addEventListener('ended', () => {
             console.log('конец видео');
+            // this.videoList.unshift();
 
-            if(this.test) {
-                this.order = this.videoList.filter(item => item.need_answer === false);
-                console.log('order', this.order);
-
-                if(this.order && this.order.length > 0) {
-                    video.src = this.order[this.i].link;
-                    this.i = this.i + 1;
-                    console.log('i', this.i);
-                    console.log('this.order.length', this.order.length - 1);
-
-                    if(this.i > this.order.length - 1) {
-                        console.log('finish');
-                        video.src = this.videoList[this.videoList.length - 1]?.link;
-                        this.order = [];
-                        this.i = 0;
-                    }
-                } else {
-                    video.src = this.videoList[this.videoList.length - 1]?.link;
-                    this.test = false;
-                }
+            if(this.videoList.length === 0) {
+              video.src = this.defaultLink;
             } else {
-                video.src = this.defaultLink;
+              console.log('1', this.videoList);
+              video.src = this.videoList.shift().link;
             }
+            // if(this.test) {
+            //     this.order = this.videoList.filter(item => item.need_answer === false);
+            //     console.log('order', this.order);
+            //
+            //     if(this.order && this.order.length > 0) {
+            //         video.src = this.order[this.i].link;
+            //         this.i = this.i + 1;
+            //         console.log('i', this.i);
+            //         console.log('this.order.length', this.order.length - 1);
+            //
+            //         if(this.i > this.order.length - 1) {
+            //             console.log('finish');
+            //             video.src = this.videoList[this.videoList.length - 1]?.link;
+            //             this.order = [];
+            //             this.i = 0;
+            //         }
+            //     } else {
+            //         video.src = this.videoList[this.videoList.length - 1]?.link;
+            //         this.test = false;
+            //     }
+            // } else {
+            //     video.src = this.defaultLink;
+            // }
         })
 
 
